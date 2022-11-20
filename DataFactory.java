@@ -1,7 +1,7 @@
 import java.util.Vector;
 
 public class DataFactory {
-    public static Vector<MyData> CreateSmallDataVector(int size){
+    public static Vector<MyData> CreateOrderedSmallDataVector(int size){
         Vector<MyData> dataVector = new Vector<MyData>();
         MyData tempData = new MyData(0, 10, 250); 
         dataVector.add((MyData) tempData.clone());

@@ -1,3 +1,4 @@
+import java.util.Collections;
 import java.util.Vector;
 
 public class Main {
@@ -6,7 +7,13 @@ public class Main {
      */
 
     public static void main(String[] args){
-        Vector<MyData> dataVector = DataFactory.CreateSmallDataVector(10000);
+        UnorderedSmallDataTest();
+        //OrderedSmallDataTest();
+        //ConcurrentUnorderedSmallDataTest();
+    }
+
+    private static void OrderedSmallDataTest(){
+        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(10000);
         for(MyData data : dataVector){
             data.PrintData();
         }
@@ -18,6 +25,37 @@ public class Main {
         for(MyData data : dataVector){
             parallelCalculator.addData(data);
         }
+    }
+
+    private static void UnorderedSmallDataTest(){
+        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(100);
+        for(MyData data : dataVector){
+            data.PrintData();
+        }
+        Collections.shuffle(dataVector);
+        MyDeltaReceiver deltaReceiver = new MyDeltaReceiver();
+        ParallelCalculator parallelCalculator = new ParallelCalculator();
+        parallelCalculator.setThreadsNumber(8);
+        parallelCalculator.setDeltaReceiver(deltaReceiver);
         
+        for(MyData data : dataVector){
+            parallelCalculator.addData(data);
+        }
+    }
+
+    private static void ConcurrentUnorderedSmallDataTest(){
+        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(1000);
+        for(MyData data : dataVector){
+            data.PrintData();
+        }
+        Collections.shuffle(dataVector);
+        MyDeltaReceiver deltaReceiver = new MyDeltaReceiver();
+        ParallelCalculator parallelCalculator = new ParallelCalculator();
+        parallelCalculator.setThreadsNumber(8);
+        parallelCalculator.setDeltaReceiver(deltaReceiver);
+        
+        dataVector.parallelStream().forEach((data) -> {
+            parallelCalculator.addData(data);
+        });
     }
 }

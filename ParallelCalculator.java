@@ -1,19 +1,12 @@
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.ArrayList;
-import java.util.Objects;
+import java.util.Collections;
 import java.util.Vector;
 import java.util.List;
-/* ඞඞඞ <-  */
 
 public class ParallelCalculator implements DeltaParallelCalculator {
 
@@ -78,8 +71,9 @@ public class ParallelCalculator implements DeltaParallelCalculator {
 
         @Override
         public void run() {
-            while(dataId != currentResultCounter/threadCount){
-                Thread.yield();
+            if(dataId != currentResultCounter/threadCount){
+                threadPoolExecutor.execute(new FutureWorker(new DataDelivereryWorker(deltas, dataId)));
+                return;
             }
             deltas.sort((Delta o1, Delta o2) -> o1.getIdx() - o2.getIdx());
             deltaReceiver.accept(deltas);
@@ -143,18 +137,18 @@ public class ParallelCalculator implements DeltaParallelCalculator {
 
     private void ScheduleIfPairFound() {
         //Data is already sorted
-        for(int i = 0; i < dataVector.size(); i++){
-            if ( i < dataVector.size() - 1 ){
-                if((dataVector.get(i).getDataId()) == (dataVector.get(i + 1).getDataId()-1)){
-                    if (!dataVector.get(i).isProcessedRight && 
-                    !dataVector.get(i+1).isProcessedLeft) {
-                        dataVector.get(i).setProcessedRight(true);
-                        dataVector.get(i+1).setProcessedLeft(true);
+        for(int i = 0; i < dataList.size(); i++){
+            if ( i < dataList.size() - 1 ){
+                if((dataList.get(i).getDataId()) == (dataList.get(i + 1).getDataId()-1)){
+                    if (!dataList.get(i).isProcessedRight && 
+                    !dataList.get(i+1).isProcessedLeft) {
+                        dataList.get(i).setProcessedRight(true);
+                        dataList.get(i+1).setProcessedLeft(true);
                         for(int thread = 0 ; thread < threadCount; thread++){
                             threadPoolExecutor.execute(
                                 new FutureWorker(
                                     new ComparingWorker(
-                                        (DataWrapper) dataVector.get(i).clone(), (DataWrapper) dataVector.get(i+1).clone(), thread)
+                                        (DataWrapper) dataList.get(i).clone(), (DataWrapper) dataList.get(i+1).clone(), thread)
                                     )
                             );
                         }
@@ -167,7 +161,7 @@ public class ParallelCalculator implements DeltaParallelCalculator {
     private ReentrantLock mutex = new ReentrantLock();
     private int currentResultCounter = 0;
     private int threadCount;
-    private Vector<DataWrapper> dataVector = new Vector<DataWrapper>();
+    private ArrayList<DataWrapper> dataList = new ArrayList<DataWrapper>();
     private PriorityBlockingQueue taskQueue;
     private ThreadPoolExecutor threadPoolExecutor;
     private DeltaReceiver deltaReceiver;
@@ -176,7 +170,7 @@ public class ParallelCalculator implements DeltaParallelCalculator {
     @Override
     public void setThreadsNumber(int threads) {
         this.threadCount = threads;
-        this.taskQueue = new PriorityBlockingQueue(100);
+        this.taskQueue = new PriorityBlockingQueue(1000);
         this.threadPoolExecutor = new ThreadPoolExecutor(threads, threads, 10L, TimeUnit.MILLISECONDS, this.taskQueue);
     }
 
@@ -190,8 +184,8 @@ public class ParallelCalculator implements DeltaParallelCalculator {
         if(dataSize == null){
             this.dataSize = data.getSize(); //All data will have the same size
         }
-        dataVector.add(new DataWrapper(data));
-        Collections.sort(dataVector, (Data o1, Data o2) -> o1.getDataId() - o2.getDataId());
+        dataList.add(new DataWrapper(data));
+        Collections.sort(dataList, (Data o1, Data o2) -> o1.getDataId() - o2.getDataId());
         ScheduleIfPairFound();
     }
 }
