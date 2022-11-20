@@ -6,19 +6,18 @@ public class Main {
      */
 
     public static void main(String[] args){
-        Vector<MyData> dataVector = DataFactory.CreateSmallDataVector(20);
+        Vector<MyData> dataVector = DataFactory.CreateSmallDataVector(10000);
         for(MyData data : dataVector){
             data.PrintData();
         }
         MyDeltaReceiver deltaReceiver = new MyDeltaReceiver();
         ParallelCalculator parallelCalculator = new ParallelCalculator();
-        parallelCalculator.setThreadsNumber(4);
+        parallelCalculator.setThreadsNumber(8);
         parallelCalculator.setDeltaReceiver(deltaReceiver);
         
         for(MyData data : dataVector){
             parallelCalculator.addData(data);
         }
-
-        deltaReceiver.printDeltas();
+        
     }
 }

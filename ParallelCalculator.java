@@ -1,22 +1,40 @@
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Vector;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Vector;
+import java.util.List;
+/* ඞඞඞ <-  */
 
 public class ParallelCalculator implements DeltaParallelCalculator {
 
     private interface PrioritizedRunnable extends Runnable {
         public int getPriority();
+    }
+
+    private class FutureWorker extends FutureTask<FutureWorker>
+        implements Comparable<FutureWorker> {
+
+        private PrioritizedRunnable runnable; 
+
+        public FutureWorker(PrioritizedRunnable runnable){
+            super(runnable, null);
+            this.runnable = runnable;
+        }
+
+        @Override
+        public int compareTo(ParallelCalculator.FutureWorker o) {
+            return runnable.getPriority() - o.runnable.getPriority();
+        }
     }
 
     private class ComparingWorker implements PrioritizedRunnable {
@@ -50,22 +68,6 @@ public class ParallelCalculator implements DeltaParallelCalculator {
         }    
     }
 
-    private class FutureWorker extends FutureTask<FutureWorker>
-        implements Comparable<FutureWorker> {
-
-        private PrioritizedRunnable runnable; 
-
-        public FutureWorker(PrioritizedRunnable runnable){
-            super(runnable, null);
-            this.runnable = runnable;
-        }
-
-        @Override
-        public int compareTo(ParallelCalculator.FutureWorker o) {
-            return runnable.getPriority() - o.runnable.getPriority();
-        }
-    }
-
     private class DataDelivereryWorker implements PrioritizedRunnable {
         private List<Delta> deltas;
         public int dataId;
@@ -76,17 +78,19 @@ public class ParallelCalculator implements DeltaParallelCalculator {
 
         @Override
         public void run() {
-            while(dataId != currentResultCounter){
+            while(dataId != currentResultCounter/threadCount){
                 Thread.yield();
             }
             deltas.sort((Delta o1, Delta o2) -> o1.getIdx() - o2.getIdx());
             deltaReceiver.accept(deltas);
+            mutex.lock();
             ++currentResultCounter;
+            mutex.unlock();
         }
 
         @Override
         public int getPriority() {
-            return this.dataId;
+            return this.dataId; 
         }
     }
 
@@ -159,6 +163,8 @@ public class ParallelCalculator implements DeltaParallelCalculator {
             }
         }
     }
+
+    private ReentrantLock mutex = new ReentrantLock();
     private int currentResultCounter = 0;
     private int threadCount;
     private Vector<DataWrapper> dataVector = new Vector<DataWrapper>();

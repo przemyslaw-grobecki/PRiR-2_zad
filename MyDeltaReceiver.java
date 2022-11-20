@@ -7,15 +7,18 @@ public class MyDeltaReceiver implements DeltaReceiver {
 
     @Override
     public void accept(List<Delta> deltasAccepted) {
+        if(deltasAccepted.isEmpty()){
+            System.out.println("Dataset is not different"); 
+        }
         this.deltas.addAll(deltasAccepted);
         for (Delta delta : deltasAccepted) {
-            System.out.println("Dataset " + delta.getDataID() + " is different to " + delta.getDataID()+1 + " at index: " + delta.getIdx() + " by " +delta.getDelta()); 
+            System.out.println("Dataset " + delta.getDataID() + " is different to " + (delta.getDataID()+1) + " at index: " + delta.getIdx() + " by " +delta.getDelta()); 
         }
     }
 
     public void printDeltas(){
         for (Delta delta : deltas) {
-            System.out.println("Dataset " + delta.getDataID() + " is different to " + delta.getDataID()+1 + " at index: " + delta.getIdx() + " by " +delta.getDelta()); 
+            System.out.println("Dataset " + delta.getDataID() + " is different to " + (delta.getDataID()+1) + " at index: " + delta.getIdx() + " by " +delta.getDelta()); 
         }
     }
 }
