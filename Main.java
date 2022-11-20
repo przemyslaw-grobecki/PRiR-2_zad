@@ -7,9 +7,9 @@ public class Main {
      */
 
     public static void main(String[] args){
-        UnorderedSmallDataTest();
+        //UnorderedSmallDataTest();
         //OrderedSmallDataTest();
-        //ConcurrentUnorderedSmallDataTest();
+        ConcurrentUnorderedSmallDataTest();
     }
 
     private static void OrderedSmallDataTest(){
