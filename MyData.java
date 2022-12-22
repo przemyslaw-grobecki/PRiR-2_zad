@@ -7,7 +7,7 @@ public class MyData implements Data, Cloneable {
     private int[] data;
     private int maxValue;
     private Random random = new Random();
-    public int numberOfReads = 0;
+    private int[] counter;
 
     public MyData(int dataId, int size, int maxValue){
         this.dataId = dataId;
@@ -15,6 +15,10 @@ public class MyData implements Data, Cloneable {
         this.maxValue = maxValue;
         for(int i = 0; i < size; i ++){
             this.data[i] = random.nextInt(maxValue+1);
+        }
+        this.counter = new int[data.length];
+        for (int i = 0; i < data.length; i++) {
+            this.counter[i] = 0;
         }
     }
 
@@ -24,6 +28,10 @@ public class MyData implements Data, Cloneable {
         this.maxValue = leftNeighbour.getMaxValue();
         for( int i = 0; i < leftNeighbour.getSize(); i ++){
             this.data[i] = leftNeighbour.getValue(i);
+        }
+        this.counter = new int[data.length];
+        for (int i = 0; i < data.length; i++) {
+            this.counter[i] = 0;
         }
     }
 
@@ -56,8 +64,11 @@ public class MyData implements Data, Cloneable {
     }
 
     @Override
-    public synchronized int getValue(int idx) {
-        numberOfReads++;
+    public int getValue(int idx) {
+        counter[idx]++;
+        if (counter[idx] > 2) {
+            System.out.println("More than two usages for dataId=" + dataId + " idx: " + counter[idx]);
+        }
         return data[idx];
     }
 
