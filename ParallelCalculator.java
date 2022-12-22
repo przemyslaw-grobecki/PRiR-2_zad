@@ -7,8 +7,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Vector;
 import java.util.List;
+import java.util.Set;
 
 public class ParallelCalculator implements DeltaParallelCalculator {
 
@@ -20,10 +22,16 @@ public class ParallelCalculator implements DeltaParallelCalculator {
         private List<Delta> deltas = new ArrayList<Delta>();
         private int threadCounter;
 
-        public void accept(List<Delta> newDeltas){
+        public synchronized void accept(List<Delta> newDeltas){
             this.deltas.addAll(newDeltas);
             if(threadCounter == threadCount - 1){
-                deltaReceiver.accept(deltas);
+                Set<Integer> keySet = buffers.keySet();
+                for (Integer key : keySet) {
+                    if(key == currentPriority){
+                        deltaReceiver.accept(buffers.remove(key).deltas);
+                        currentPriority++;
+                    }
+                }
             }
             else{
                 threadCounter++;
@@ -57,45 +65,19 @@ public class ParallelCalculator implements DeltaParallelCalculator {
                     result.add(new Delta(priority, i, valueRight - valueLeft));
                 }
             }
-            threadPoolExecutor.execute(new DataDelivereryWorker(result, priority));
+            SendBuffer buff = buffers.putIfAbsent(priority, new SendBuffer());
+            if(buff == null){
+                buffers.get(priority).accept(result);
+            }
+            else{
+                buff.accept(result);
+            }
         }
 
         @Override
         public int getPriority() {
             return this.priority;
         }    
-    }
-
-    private class DataDelivereryWorker implements PrioritizedRunnable {
-        private List<Delta> deltas;
-        public Integer dataId;
-        public DataDelivereryWorker(List<Delta> deltas, Integer dataId){
-            this.deltas = deltas;
-            this.dataId = dataId;
-        }
-
-        @Override
-        public void run() {
-            if(dataId != currentResultCounter/threadCount){
-                threadPoolExecutor.execute(new DataDelivereryWorker(deltas, dataId));
-                return;
-            }
-            mutex.lock();   
-            SendBuffer buff = buffers.putIfAbsent(dataId, new SendBuffer());
-            if(buff == null){
-                buffers.get(dataId).accept(deltas);
-            }
-            else{
-                buff.accept(deltas);
-            } 
-            ++currentResultCounter;
-            mutex.unlock();
-        }
-
-        @Override
-        public int getPriority() {
-            return this.dataId; 
-        }
     }
 
     private class DataWrapper implements Data, Cloneable {
@@ -158,9 +140,7 @@ public class ParallelCalculator implements DeltaParallelCalculator {
                     dataLeft.setProcessedRight(true);
                     dataRight.setProcessedLeft(true);
                     for(int thread = 0 ; thread < threadCount; thread++){
-                        threadPoolExecutor.execute(
-                            new ComparingWorker(dataLeft, dataRight, thread)
-                        );
+                        threadPoolExecutor.execute(new ComparingWorker(dataLeft, dataRight, thread));
                     }
                 }
             }
@@ -170,12 +150,12 @@ public class ParallelCalculator implements DeltaParallelCalculator {
     }
 
     private ReentrantLock mutex = new ReentrantLock();
-    private int currentResultCounter = 0;
+    private int currentPriority = 0;
     private int threadCount;
     private ThreadPoolExecutor threadPoolExecutor;
     private DeltaReceiver deltaReceiver;
     private Integer dataSize;
-    private ConcurrentMap<Integer, SendBuffer> buffers = new ConcurrentHashMap<Integer, SendBuffer>();
+    private ConcurrentMap<Integer, SendBuffer> buffers = new ConcurrentSkipListMap<Integer, SendBuffer>();
     private ConcurrentMap<Integer, DataWrapper> datas = new ConcurrentSkipListMap<Integer, DataWrapper>();
 
     @Override

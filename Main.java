@@ -29,7 +29,7 @@ public class Main {
     }
 
     private static void UnorderedSmallDataTest(){
-        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(100);
+        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(10);
         for(MyData data : dataVector){
             data.PrintData();
         }
@@ -45,7 +45,7 @@ public class Main {
     }
 
     private static void ConcurrentUnorderedSmallDataTest(){
-        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(100);
+        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(10);
         for(MyData data : dataVector){
             data.PrintData();
         }

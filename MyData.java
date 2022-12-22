@@ -66,8 +66,8 @@ public class MyData implements Data, Cloneable {
     @Override
     public int getValue(int idx) {
         counter[idx]++;
-        if (counter[idx] > 2) {
-            System.out.println("More than two usages for dataId=" + dataId + " idx: " + counter[idx]);
+        if (counter[idx] > 3) {
+            System.out.println("More than two usages for dataId=" + dataId + " idx: " + (counter[idx]-1));
         }
         return data[idx];
     }
