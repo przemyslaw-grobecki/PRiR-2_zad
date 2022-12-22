@@ -44,18 +44,28 @@ public class Main {
     }
 
     private static void ConcurrentUnorderedSmallDataTest(){
-        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(1000);
+        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(100);
         for(MyData data : dataVector){
             data.PrintData();
         }
         Collections.shuffle(dataVector);
         MyDeltaReceiver deltaReceiver = new MyDeltaReceiver();
         ParallelCalculator parallelCalculator = new ParallelCalculator();
-        parallelCalculator.setThreadsNumber(8);
+        parallelCalculator.setThreadsNumber(4);
         parallelCalculator.setDeltaReceiver(deltaReceiver);
         
         dataVector.parallelStream().forEach((data) -> {
             parallelCalculator.addData(data);
         });
+        try{
+            Thread.sleep(3000);
+        }
+        catch(Exception e)
+        {
+
+        }
+        for(MyData data : dataVector){
+            System.out.println(data.numberOfReads);
+        }
     }
 }

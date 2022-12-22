@@ -7,6 +7,7 @@ public class MyData implements Data, Cloneable {
     private int[] data;
     private int maxValue;
     private Random random = new Random();
+    public int numberOfReads = 0;
 
     public MyData(int dataId, int size, int maxValue){
         this.dataId = dataId;
@@ -55,7 +56,8 @@ public class MyData implements Data, Cloneable {
     }
 
     @Override
-    public int getValue(int idx) {
+    public synchronized int getValue(int idx) {
+        numberOfReads++;
         return data[idx];
     }
 
