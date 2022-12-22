@@ -1,5 +1,6 @@
 import java.util.Collections;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 public class Main {
     /**
@@ -28,7 +29,7 @@ public class Main {
     }
 
     private static void UnorderedSmallDataTest(){
-        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(100);
+        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(10);
         for(MyData data : dataVector){
             data.PrintData();
         }
@@ -44,7 +45,7 @@ public class Main {
     }
 
     private static void ConcurrentUnorderedSmallDataTest(){
-        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(100);
+        Vector<MyData> dataVector = DataFactory.CreateOrderedSmallDataVector(10);
         for(MyData data : dataVector){
             data.PrintData();
         }
@@ -64,8 +65,11 @@ public class Main {
         {
 
         }
+
+        /*
         for(MyData data : dataVector){
             System.out.println(data.numberOfReads);
         }
+         */
     }
 }
