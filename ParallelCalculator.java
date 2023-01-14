@@ -20,21 +20,19 @@ public class ParallelCalculator implements DeltaParallelCalculator {
 
     private class SendBuffer {
         private List<Delta> deltas = new ArrayList<Delta>();
-        private int threadCounter;
+        private int threadCounter = 0;
 
         public synchronized void accept(List<Delta> newDeltas){
             this.deltas.addAll(newDeltas);
-            if(threadCounter == threadCount - 1){
+            threadCounter++;
+            if(threadCounter == threadCount){
                 Set<Integer> keySet = buffers.keySet();
                 for (Integer key : keySet) {
-                    if(key == currentPriority){
+                    if(key == currentPriority && buffers.get(key).threadCounter == threadCount){
                         deltaReceiver.accept(buffers.remove(key).deltas);
                         currentPriority++;
                     }
                 }
-            }
-            else{
-                threadCounter++;
             }
         }
     }
@@ -65,6 +63,7 @@ public class ParallelCalculator implements DeltaParallelCalculator {
                     result.add(new Delta(priority, i, valueRight - valueLeft));
                 }
             }
+            mutex.lock();
             SendBuffer buff = buffers.putIfAbsent(priority, new SendBuffer());
             if(buff == null){
                 buffers.get(priority).accept(result);
@@ -72,6 +71,7 @@ public class ParallelCalculator implements DeltaParallelCalculator {
             else{
                 buff.accept(result);
             }
+            mutex.unlock();
         }
 
         @Override
@@ -144,8 +144,6 @@ public class ParallelCalculator implements DeltaParallelCalculator {
                     }
                 }
             }
-            dataLeft = null;
-            dataRight = null;
         }
     }
 
